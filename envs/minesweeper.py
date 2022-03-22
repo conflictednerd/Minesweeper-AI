@@ -1,11 +1,10 @@
-from enum import Enum
 from typing import Any, Dict, Tuple
 
 import gym
 import numpy as np
 
 
-class Status(Enum):
+class Status():
     UNK = -1
     MINE = -2
     FLAG = -3
@@ -33,19 +32,19 @@ class MineSweeper(gym.Env):
         if not self.is_valid(action[0], action[1]):
             # illegal action, small negative rewrad
             return self.obs_state.copy(), self.BAD_ACTION_REWARD, self.done, None
-        if self.obs_state[action] != Status.UNK.value:
+        if self.obs_state[action] != Status.UNK:
             # redundant action, small negative reward
             return self.obs_state.copy(), self.BAD_ACTION_REWARD, self.done, None
-        if self.ground_truth[action] == Status.MINE.value:
+        if self.ground_truth[action] == Status.MINE:
             # game over, lost, large negative reward
-            self.obs_state[action] = Status.MINE.value
+            self.obs_state[action] = Status.MINE
             self.done = True
             return self.obs_state.copy(), self.LOSE_REWARD, self.done, None
 
         reward = self.GOOD_ACTION_REWARD
         # modifies self.obs_state to unlock unknown cells
         self.unlock_cell(action)
-        if np.count_nonzero(self.obs_state == Status.UNK.value) == self.num_mines:
+        if np.count_nonzero(self.obs_state == Status.UNK) == self.num_mines:
             # game is won, all remaining unk cells are mines
             reward += self.WIN_REWARD
             self.done = True
@@ -53,7 +52,7 @@ class MineSweeper(gym.Env):
 
     def reset(self) -> Any:
         self.ground_truth, self.mines = self.generate_board()
-        self.obs_state = Status.UNK.value * np.ones_like(self.ground_truth)
+        self.obs_state = Status.UNK * np.ones_like(self.ground_truth)
         return self.obs_state
 
     def render(self, mode: str = 'console') -> None:
@@ -62,8 +61,8 @@ class MineSweeper(gym.Env):
                 row = ''
                 for j in range(self.board_shape[1]):
                     temp = int(self.obs_state[i, j])
-                    temp = '-' if temp == Status.UNK.value else temp
-                    temp = '*' if temp == Status.MINE.value else temp
+                    temp = '-' if temp == Status.UNK else temp
+                    temp = '*' if temp == Status.MINE else temp
                     row += str(temp) + '    '
                 print(row)
 
@@ -81,14 +80,14 @@ class MineSweeper(gym.Env):
             mine_coordinates.append((x, y))
             for nx in [x-1, x, x+1]:
                 for ny in [y-1, y, y+1]:
-                    if self.is_valid(nx, ny) and board[nx, ny] != Status.MINE.value:
+                    if self.is_valid(nx, ny) and board[nx, ny] != Status.MINE:
                         board[nx, ny] += 1
-            board[x, y] = Status.MINE.value
+            board[x, y] = Status.MINE
         return board, mine_coordinates
 
     def unlock_cell(self, coordinates):
         x, y = coordinates
-        if self.obs_state[x, y] != Status.UNK.value or self.ground_truth[x, y] == Status.MINE.value:
+        if self.obs_state[x, y] != Status.UNK or self.ground_truth[x, y] == Status.MINE:
             # is already unlocked or is a mine
             return
         self.obs_state[x, y] = self.ground_truth[x, y]
