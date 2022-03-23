@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 
 import gym
 import numpy as np
@@ -12,7 +12,7 @@ class Status():
 
 
 class MineSweeper(gym.Env):
-    def __init__(self, board_shape: Tuple[int, int], num_mines: int) -> None:
+    def __init__(self, board_shape: Tuple[int, int], num_mines: int, max_steps: int) -> None:
         super().__init__()
         self.BAD_ACTION_REWARD = -1
         self.GOOD_ACTION_REWARD = 1
@@ -20,12 +20,17 @@ class MineSweeper(gym.Env):
         self.LOSE_REWARD = -100
         self.board_shape = board_shape
         self.num_mines = num_mines
+        self.max_steps = max_steps
+        self.current_step = 0
         self.ground_truth = None
         self.obs_state = None
         self.mines = []
         self.done = False
 
     def step(self, action: Tuple[int, int]) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
+        self.current_step += 1
+        if self.current_step > self.max_steps:
+            self.done = True
         if self.done:
             # no changes
             return self.obs_state.copy(), 0, True, None
@@ -51,6 +56,8 @@ class MineSweeper(gym.Env):
         return self.obs_state.copy(), reward, self.done, None
 
     def reset(self) -> Any:
+        self.current_step = 0
+        self.done = False
         self.ground_truth, self.mines = self.generate_board()
         self.obs_state = Status.UNK * np.ones_like(self.ground_truth)
         return self.obs_state
@@ -102,6 +109,23 @@ class MineSweeper(gym.Env):
         return 0 <= x < self.board_shape[0] and 0 <= y < self.board_shape[1]
 
 
+class DummyVecEnv(gym.Env):
+    def __init__(self, env_fn, n, env_args: Dict = {}) -> None:
+        self.envs = [env_fn(env_args) for _ in range(n)]
+
+    def reset(self) -> List:
+        return [env.reset() for env in self.envs]
+
+    def step(self, actions):
+        obss, rewards, dones, infos = [], [], [], []
+        for env, action in zip(self.envs, actions):
+            obs, reward, done, info = env.step(action)
+            obss.append(obs)
+            rewards.append(reward)
+            dones.append(done)
+            infos.append(info)
+        return obss, rewards, dones, infos
+
 # env = MineSweeper((6, 6), 6)
 # env.reset()
 # print(f'mines: {env.mines}')
@@ -112,3 +136,20 @@ class MineSweeper(gym.Env):
 #     obs, rew, done, info = env.step((x, y))
 #     print(f'obs.shape: {obs.shape}, reward: {rew}, done: {done}')
 #     env.render()
+
+
+# env_args = {
+#     'board_shape': (6, 6),
+#     'num_mines': 10,
+#     'max_steps': 40,
+# }
+# vec_env = DummyVecEnv(lambda args: MineSweeper(**args),
+#                       n=32, env_args=env_args)
+# obs = vec_env.reset()
+# print(len(obs))
+# print(obs[0].shape)
+# for i in range(20):
+#     obs, rew, done, info = vec_env.step([(i, i)]*32)
+#     print(len(obs))
+#     print(rew)
+#     print(done)
