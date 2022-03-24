@@ -5,22 +5,29 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 
+
 class Policy(ABC):
     @abstractmethod
     def act(self, obs, hidden_states=None):
         pass
 
+
 class SimpleActorPolicy(nn.Module, Policy):
-    def __init__(self, layers: List[int], optim_lr:float) -> None:
+    def __init__(self, layers: List[int], optim_lr: float, device: torch.device = None) -> None:
         '''
         The first element of layers is the dimension of (flattened) observation.
         The last element of layers is the number of (discrete) actions. It will be the output shape.
         '''
         super(SimpleActorPolicy, self).__init__()
-        self.layers = [nn.Linear(x, y) for x, y in zip(layers[:-1], layers[1:])]
+        self.device = torch.device(
+            'cuda' if torch.cuda.is_available() else 'cpu') if device is None else device
+        self.layers = [nn.Linear(x, y)
+                       for x, y in zip(layers[:-1], layers[1:])]
+        self.to(self.device)
         self.optimizer = optim.Adam(self.parameters(), optim_lr)
 
     def forward(self, obs: torch.Tensor) -> torch.Tensor:
+        obs = obs.to(self.device)
         for layer in self.layers[:-1]:
             obs = F.relu(layer(obs))
         logits = self.layers[-1](obs)
