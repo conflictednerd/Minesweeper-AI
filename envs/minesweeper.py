@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 import gym
 import numpy as np
@@ -27,7 +27,9 @@ class MineSweeper(gym.Env):
         self.mines = []
         self.done = False
 
-    def step(self, action: Tuple[int, int]) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
+    def step(self, action: Union[Tuple[int, int], int]) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
+        if isinstance(action, int):
+            action = (int(action / self.board_shape[1]), int(action) % self.board_shape[1])
         self.current_step += 1
         if self.current_step > self.max_steps:
             self.done = True
@@ -114,9 +116,9 @@ class DummyVecEnv(gym.Env):
         self.envs = [env_fn(env_args) for _ in range(n)]
 
     def reset(self) -> List[np.ndarray]:
-        return [env.reset() for env in self.envs]
+        return np.array([env.reset() for env in self.envs])
 
-    def step(self, actions) -> Tuple[List[np.ndarray], List[float], List[bool], List[Dict[str, Any]]]:
+    def step(self, actions) -> Tuple[np.ndarray, List[float], List[bool], List[Dict[str, Any]]]:
         obss, rewards, dones, infos = [], [], [], []
         for env, action in zip(self.envs, actions):
             obs, reward, done, info = env.step(action)
@@ -124,7 +126,7 @@ class DummyVecEnv(gym.Env):
             rewards.append(reward)
             dones.append(done)
             infos.append(info)
-        return obss, rewards, dones, infos
+        return np.array(obss), np.array(rewards), np.array(dones), infos
 
 # env = MineSweeper((6, 6), 6)
 # env.reset()
