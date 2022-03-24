@@ -55,7 +55,7 @@ class MineSweeper(gym.Env):
             self.done = True
         return self.obs_state.copy(), reward, self.done, None
 
-    def reset(self) -> Any:
+    def reset(self) -> np.ndarray:
         self.current_step = 0
         self.done = False
         self.ground_truth, self.mines = self.generate_board()
@@ -113,10 +113,10 @@ class DummyVecEnv(gym.Env):
     def __init__(self, env_fn, n, env_args: Dict = {}) -> None:
         self.envs = [env_fn(env_args) for _ in range(n)]
 
-    def reset(self) -> List:
+    def reset(self) -> List[np.ndarray]:
         return [env.reset() for env in self.envs]
 
-    def step(self, actions):
+    def step(self, actions) -> Tuple[List[np.ndarray], List[float], List[bool], List[Dict[str, Any]]]:
         obss, rewards, dones, infos = [], [], [], []
         for env, action in zip(self.envs, actions):
             obs, reward, done, info = env.step(action)
