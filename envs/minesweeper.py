@@ -17,7 +17,7 @@ class MineSweeper(gym.Env):
         self.BAD_ACTION_REWARD = -1
         self.GOOD_ACTION_REWARD = 1
         self.WIN_REWARD = 100
-        self.LOSE_REWARD = -100
+        self.LOSE_REWARD = -1
         self.board_shape = board_shape
         self.num_mines = num_mines
         self.max_steps = max_steps
@@ -28,7 +28,7 @@ class MineSweeper(gym.Env):
         self.done = False
 
     def step(self, action: Union[Tuple[int, int], int]) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
-        if isinstance(action, int):
+        if not isinstance(action, tuple):
             action = (int(action / self.board_shape[1]), int(action) % self.board_shape[1])
         self.current_step += 1
         if self.current_step > self.max_steps:
