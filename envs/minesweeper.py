@@ -16,8 +16,8 @@ class MineSweeper(gym.Env):
         super().__init__()
         self.BAD_ACTION_REWARD = -1
         self.GOOD_ACTION_REWARD = 1
-        self.WIN_REWARD = 100
-        self.LOSE_REWARD = -1
+        self.WIN_REWARD = 10
+        self.LOSE_REWARD = -2
         self.board_shape = board_shape
         self.num_mines = num_mines
         self.max_steps = max_steps
